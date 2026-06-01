@@ -52,5 +52,7 @@ This project is a static portfolio website built with HTML, CSS, and JavaScript.
 ## Contact
 
 - Email: `lokenderpratap8@gmail.com`
-- GitHub button: https://github.com/lokenderpratap8-sketch
-- LinkedIn button: https://www.linkedin.com/in/lokender-pratap-5374a8364/
+
+[![GitHub](https://img.shields.io/badge/GitHub-View%20Profile-black?style=for-the-badge)](https://github.com/lokenderpratap8-sketch)
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/lokender-pratap-5374a8364/)
