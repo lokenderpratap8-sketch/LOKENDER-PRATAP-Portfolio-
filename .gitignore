@@ -1,1 +1,5 @@
 .vercel
+# Ignore local deployment logs and temporary Vercel output files
+deploy-*.txt
+push-*.txt
+vercel-*.txt
