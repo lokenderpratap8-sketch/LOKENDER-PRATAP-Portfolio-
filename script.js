@@ -1,36 +1,57 @@
 const root = document.documentElement;
-const themeToggle = document.querySelector('.theme-toggle');
-const navToggle = document.querySelector('.nav-toggle');
-const navPanel = document.querySelector('[data-nav-panel]');
-const visitorCount = document.querySelector('#visitorCount');
-const graph = document.querySelector('[data-graph]');
+let themeToggle = null;
+let navToggle = null;
+let navPanel = null;
+let visitorCount = null;
+let graph = null;
 
-document.querySelector('#year').textContent = new Date().getFullYear();
-
-const savedTheme = localStorage.getItem('portfolio-theme');
-if (savedTheme) {
-  root.dataset.theme = savedTheme;
+function safeText(selector, text) {
+  const el = document.querySelector(selector);
+  if (el) el.textContent = text;
 }
-document.querySelector('.theme-icon').textContent = root.dataset.theme === 'dark' ? '☾' : '☀';
 
-themeToggle.addEventListener('click', () => {
-  const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-  root.dataset.theme = nextTheme;
-  localStorage.setItem('portfolio-theme', nextTheme);
-  document.querySelector('.theme-icon').textContent = nextTheme === 'dark' ? '☾' : '☀';
-});
+function init() {
+  themeToggle = document.querySelector('.theme-toggle');
+  navToggle = document.querySelector('.nav-toggle');
+  navPanel = document.querySelector('[data-nav-panel]');
+  visitorCount = document.querySelector('#visitorCount');
+  graph = document.querySelector('[data-graph]');
 
-navToggle.addEventListener('click', () => {
-  const isOpen = navPanel.classList.toggle('open');
-  navToggle.setAttribute('aria-expanded', String(isOpen));
-});
+  safeText('#year', new Date().getFullYear());
 
-navPanel.querySelectorAll('a').forEach((link) => {
-  link.addEventListener('click', () => {
-    navPanel.classList.remove('open');
-    navToggle.setAttribute('aria-expanded', 'false');
-  });
-});
+  const savedTheme = localStorage.getItem('portfolio-theme');
+  if (savedTheme) root.dataset.theme = savedTheme;
+  safeText('.theme-icon', root.dataset.theme === 'dark' ? '☾' : '☀');
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = nextTheme;
+      localStorage.setItem('portfolio-theme', nextTheme);
+      safeText('.theme-icon', nextTheme === 'dark' ? '☾' : '☀');
+    });
+  }
+
+  if (navToggle && navPanel) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = navPanel.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navPanel.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        navPanel.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+  // After DOM bindings are ready, fetch GitHub contribution data if available
+  try {
+    if (typeof fetchGitHubContributions === 'function') fetchGitHubContributions();
+  } catch (e) {
+    console.error('Error initializing GitHub contributions:', e);
+  }
+}
 
 const apiNamespace = 'lokenderpratap-portfolio';
 const apiKey = 'visitor-count';
@@ -48,7 +69,11 @@ function displayVisitorCount(value) {
 }
 
 async function loadVisitorCount() {
-  const savedCount = Number(localStorage.getItem(localFallbackKey) || 0);
+  let savedCount = Number(localStorage.getItem(localFallbackKey) || 0);
+  if (savedCount === 0) {
+    savedCount = 1;
+    localStorage.setItem(localFallbackKey, '1');
+  }
   displayVisitorCount(savedCount);
 
   try {
@@ -88,7 +113,16 @@ async function loadVisitorCount() {
   }
 }
 
-loadVisitorCount();
+// Initialize DOM bindings then load the visitor count
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    try { loadVisitorCount(); } catch (e) { console.error(e); }
+  });
+} else {
+  init();
+  try { loadVisitorCount(); } catch (e) { console.error(e); }
+}
 
 const revealObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
@@ -194,8 +228,7 @@ function generateContributionData(events) {
   });
 }
 
-// Fetch GitHub contributions on page load
-fetchGitHubContributions();
+// Note: `fetchGitHubContributions` is invoked from `init()` after DOM is ready
 
 // Ensure contact/footer external links open reliably and safely
 document.addEventListener('DOMContentLoaded', () => {
