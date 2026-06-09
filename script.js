@@ -34,21 +34,57 @@ navPanel.querySelectorAll('a').forEach((link) => {
 
 const apiNamespace = 'lokenderpratap-portfolio';
 const apiKey = 'visitor-count';
+const localFallbackKey = 'portfolio-visits-fallback';
+const localSessionKey = 'portfolio-visit-session';
+const localIncrementKey = 'portfolio-visit-local-increment';
+
+function formatVisitorCount(value) {
+  return Number(value).toLocaleString();
+}
+
+function displayVisitorCount(value) {
+  if (!visitorCount) return;
+  visitorCount.textContent = formatVisitorCount(value);
+}
 
 async function loadVisitorCount() {
+  const savedCount = Number(localStorage.getItem(localFallbackKey) || 0);
+  displayVisitorCount(savedCount);
+
   try {
-    const response = await fetch(`https://api.countapi.xyz/hit/${apiNamespace}/${apiKey}`);
-    const data = await response.json();
-    if (data && typeof data.value === 'number') {
-      visitorCount.textContent = data.value.toLocaleString();
-      localStorage.setItem('portfolio-visits-fallback', String(data.value));
-      return;
+    const response = await fetch(
+      `https://api.countapi.xyz/hit/${encodeURIComponent(apiNamespace)}/${encodeURIComponent(apiKey)}`,
+      { mode: 'cors' }
+    );
+
+    if (!response.ok) {
+      throw new Error(`CountAPI returned HTTP ${response.status}`);
     }
-    throw new Error('Invalid CountAPI response');
+
+    const data = await response.json();
+    if (!data || typeof data.value !== 'number') {
+      throw new Error('Invalid CountAPI response');
+    }
+
+    displayVisitorCount(data.value);
+    localStorage.setItem(localFallbackKey, String(data.value));
+    localStorage.removeItem(localIncrementKey);
+    localStorage.setItem(localSessionKey, '1');
+    return;
   } catch (error) {
     console.error('Visitor count error:', error);
-    const fallback = Number(localStorage.getItem('portfolio-visits-fallback') || 0);
-    visitorCount.textContent = fallback.toLocaleString();
+
+    const fallbackCount = savedCount || 0;
+    const alreadyCounted = localStorage.getItem(localSessionKey) === '1';
+
+    if (!alreadyCounted) {
+      const increment = Number(localStorage.getItem(localIncrementKey) || 0) + 1;
+      localStorage.setItem(localIncrementKey, String(increment));
+      localStorage.setItem(localSessionKey, '1');
+      displayVisitorCount(fallbackCount + increment);
+    } else {
+      displayVisitorCount(fallbackCount);
+    }
   }
 }
 
