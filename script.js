@@ -53,8 +53,6 @@ function init() {
   }
 }
 
-const apiNamespace = 'lokenderpratap-portfolio';
-const apiKey = 'visitor-count';
 const localFallbackKey = 'portfolio-visits-fallback';
 const localSessionKey = 'portfolio-visit-session';
 const localIncrementKey = 'portfolio-visit-local-increment';
@@ -77,22 +75,30 @@ async function loadVisitorCount() {
   displayVisitorCount(savedCount);
 
   try {
+    // Use Visitor Badge API (more reliable than CountAPI)
     const response = await fetch(
-      `https://api.countapi.xyz/hit/${encodeURIComponent(apiNamespace)}/${encodeURIComponent(apiKey)}`,
+      'https://visitor-badge.laobi.icu/badge?page_id=lokenderpratap-portfolio.1&left_color=gray&right_color=blue',
       { mode: 'cors' }
     );
 
     if (!response.ok) {
-      throw new Error(`CountAPI returned HTTP ${response.status}`);
+      throw new Error(`Visitor Badge API returned HTTP ${response.status}`);
     }
 
-    const data = await response.json();
-    if (!data || typeof data.value !== 'number') {
-      throw new Error('Invalid CountAPI response');
+    const text = await response.text();
+    // Extract count from SVG response
+    const match = text.match(/(\d{1,3}(,\d{3})*(\.\d+)?)/);
+    if (!match) {
+      throw new Error('Could not extract count from response');
     }
 
-    displayVisitorCount(data.value);
-    localStorage.setItem(localFallbackKey, String(data.value));
+    const count = Number(match[0].replace(/,/g, ''));
+    if (isNaN(count)) {
+      throw new Error('Invalid count value');
+    }
+
+    displayVisitorCount(count);
+    localStorage.setItem(localFallbackKey, String(count));
     localStorage.removeItem(localIncrementKey);
     localStorage.setItem(localSessionKey, '1');
     return;
